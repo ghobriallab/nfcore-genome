@@ -124,6 +124,22 @@ workflow FASTQ_PREPROCESS_GATK {
                     def read_files = reads.sort(false) { a,b -> a.getName().tokenize('.')[0] <=> b.getName().tokenize('.')[0] }.collate(2)
                     [ meta + [ n_fastq: read_files.size() ], read_files ]
                 }.transpose()
+
+                // Optionally cap the total number of FASTQ chunks per sample (across all lanes).
+                // The cap is derived from the per-sample read-pair limit and the chunk size:
+                // ceil(reads_to_process / split_fastq). Done after transpose() so each chunk-pair
+                // is its own emission, then regrouped by sample, truncated with take(), and fanned
+                // back out. Downstream n_fastq / groupKey are recomputed from this capped channel,
+                // so the workflow won't stall.
+                if (params.reads_to_process > 0) {
+                    def max_fastq_chunks = Math.ceil(params.reads_to_process / params.split_fastq) as int
+                    reads_for_bbsplit = reads_for_bbsplit
+                        .map { meta, reads -> [ meta.subMap('patient', 'sample', 'sex', 'status'), meta, reads ] }
+                        .groupTuple()
+                        .flatMap { _sample_key, metas, reads_list ->
+                            [metas, reads_list].transpose().take(max_fastq_chunks)
+                        }
+                }
             } else reads_for_bbsplit = FASTP.out.reads
 
             versions = versions.mix(FASTP.out.versions)

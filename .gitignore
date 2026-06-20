@@ -16,3 +16,6 @@ test.xml
 .vscode/mcp.json
 modules/nf-core/**/tests/
 subworkflows/nf-core/**/tests/
+# pixi environments
+.pixi/*
+!.pixi/config.toml

@@ -21,9 +21,12 @@ workflow BAM_MARKDUPLICATES {
     // RUN MARKUPDUPLICATES
     // --CREATE_INDEX true is set via ext.args when --save_output_as_bam, so the
     // module emits .bai inline; CRAM mode emits .crai via samtools post-conversion.
+    // bam.view()
     GATK4_MARKDUPLICATES(bam, fasta.map{ meta, fasta_ -> [ fasta_ ] }, fasta_fai.map{ meta, fasta_fai_ -> [ fasta_fai_ ] })
 
     // Unified alignment output — BAM or CRAM depending on save_output_as_bam
+    // GATK4_MARKDUPLICATES.out.bam.view ()
+    // GATK4_MARKDUPLICATES.out.bai.view ()
     alignment = GATK4_MARKDUPLICATES.out.bam
         .join(GATK4_MARKDUPLICATES.out.bai, failOnDuplicate: true, failOnMismatch: true)
         .mix(GATK4_MARKDUPLICATES.out.cram

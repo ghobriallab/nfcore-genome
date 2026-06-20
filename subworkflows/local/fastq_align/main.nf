@@ -8,6 +8,8 @@ include { BWAMEM2_MEM            } from '../../../modules/nf-core/bwamem2/mem/ma
 include { BWA_MEM as BWAMEM1_MEM } from '../../../modules/nf-core/bwa/mem/main'
 include { DRAGMAP_ALIGN          } from '../../../modules/nf-core/dragmap/align/main'
 include { SENTIEON_BWAMEM        } from '../../../modules/nf-core/sentieon/bwamem/main'
+include { VARIANTBAM             } from '../../../modules/nf-core/variantbam/main'
+include { SAMTOOLS_INDEX         } from '../../../modules/nf-core/samtools/index/main'
 
 workflow FASTQ_ALIGN {
     take:
@@ -38,6 +40,16 @@ workflow FASTQ_ALIGN {
     bam = bam.mix(SENTIEON_BWAMEM.out.bam_and_bai.map{ meta, bam_file, _bai -> [ meta, bam_file ] })
 
     bai = SENTIEON_BWAMEM.out.bam_and_bai.map{ meta, _bam_file, bai -> [ meta, bai ] }
+
+    // Optionally cap coverage with VariantBam (-m <cap_coverage> -b)
+    // VariantBam emits a new bam without an index, so re-index it here
+    if (params.cap_coverage) {
+        VARIANTBAM(bam)
+        bam = VARIANTBAM.out.bam
+        // SAMTOOLS_INDEX(bam)
+        // bai = SAMTOOLS_INDEX.out.bai
+        // versions = versions.mix(SAMTOOLS_INDEX.out.versions)
+    }
 
     // Gather reports of all tools used
     reports = reports.mix(DRAGMAP_ALIGN.out.log)

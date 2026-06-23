@@ -270,6 +270,7 @@ workflow SAREK {
         cram_variant_calling,
         ngscheckmate_bed,
         fasta,
+        fasta_fai,
         skip_tools.split(',').contains('baserecalibrator'),
         intervals_for_preprocessing,
     )

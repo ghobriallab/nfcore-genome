@@ -308,7 +308,9 @@ workflow FASTQ_PREPROCESS_GATK {
                 cram_skip_markduplicates = channel.empty().mix(input_sample)
             }
 
-            CRAM_QC_NO_MD(cram_skip_markduplicates, fasta, intervals_for_preprocessing)
+            CRAM_QC_NO_MD(cram_skip_markduplicates, fasta, fasta_fai, intervals_for_preprocessing)
+            // Use the high-coverage-filtered alignment downstream (original where no high-cov regions).
+            cram_skip_markduplicates = CRAM_QC_NO_MD.out.alignment
 
             // Gather QC reports
             reports = reports.mix(CRAM_QC_NO_MD.out.reports.collect{ _meta, report -> [ report ] })

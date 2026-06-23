@@ -32,8 +32,10 @@ workflow BAM_MARKDUPLICATES {
         .mix(GATK4_MARKDUPLICATES.out.cram
             .join(GATK4_MARKDUPLICATES.out.crai, failOnDuplicate: true, failOnMismatch: true))
 
-    // QC on alignment
-    CRAM_QC_MOSDEPTH_SAMTOOLS(alignment, fasta, intervals_bed_combined)
+    // QC on alignment. The subworkflow also removes reads in high-coverage regions and
+    // returns the filtered alignment (original alignment for samples with no high-cov regions).
+    CRAM_QC_MOSDEPTH_SAMTOOLS(alignment, fasta, fasta_fai, intervals_bed_combined)
+    alignment = CRAM_QC_MOSDEPTH_SAMTOOLS.out.alignment
 
     // Gather all reports generated
     reports = reports.mix(GATK4_MARKDUPLICATES.out.metrics)

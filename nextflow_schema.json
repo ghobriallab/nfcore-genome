@@ -346,6 +346,13 @@
                     "fa_icon": "fas fa-compress-alt",
                     "description": "Cap BAM coverage using VariantBam after alignment. Set to an integer (e.g. 1000) to enable; omit or set to null to skip.",
                     "help_text": "When set, runs VariantBam after alignment with `variant <bam> -m <cap_coverage> -b -o <out.bam>`. Useful for downsampling high-coverage regions before variant calling."
+                },
+                "high_coverage_threshold": {
+                    "type": "integer",
+                    "default": 50000,
+                    "fa_icon": "fas fa-chart-area",
+                    "description": "Mean per-window coverage above which a 500bp mosdepth region is flagged as high-coverage.",
+                    "help_text": "After the post-deduplication mosdepth run, the 500bp-window coverage BED (`*.regions.bed.gz`) is parsed and windows with a mean coverage greater than this value are written to `*.high_coverage.bed`."
                 }
             }
         },

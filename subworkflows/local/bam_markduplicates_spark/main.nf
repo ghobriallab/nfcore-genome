@@ -31,8 +31,10 @@ workflow BAM_MARKDUPLICATES_SPARK {
     alignment = GATK4SPARK_MARKDUPLICATES.out.output
         .join(INDEX_MARKDUPLICATES.out.bai.mix(INDEX_MARKDUPLICATES.out.crai), failOnDuplicate: true, failOnMismatch: true)
 
-    // QC on alignment
-    CRAM_QC_MOSDEPTH_SAMTOOLS(alignment, fasta, intervals_bed_combined)
+    // QC on alignment. The subworkflow also removes reads in high-coverage regions and
+    // returns the filtered alignment (original alignment for samples with no high-cov regions).
+    CRAM_QC_MOSDEPTH_SAMTOOLS(alignment, fasta, fasta_fai, intervals_bed_combined)
+    alignment = CRAM_QC_MOSDEPTH_SAMTOOLS.out.alignment
 
     // When running Marduplicates spark, and saving reports
     GATK4_ESTIMATELIBRARYCOMPLEXITY(bam, fasta.map{ meta, fasta_ -> [ fasta_ ] }, fasta_fai.map{ meta, fasta_fai_ -> [ fasta_fai_ ] }, dict.map{ meta, dict_ -> [ dict_ ] })

@@ -1,9 +1,12 @@
 /**
- * Removes reads overlapping high-coverage regions from a CRAM/BAM.
- * `samtools view -L <bed>` selects reads overlapping the regions; `-U` writes the
- * *unselected* reads (everything NOT overlapping) to the output, effectively
- * dropping reads in the high-coverage windows. The kept output is re-indexed and
- * keeps the same format (BAM or CRAM) as the input.
+ * Removes reads in high-coverage regions from a BAM/CRAM, mate-aware and in a single pass.
+ *
+ * The input `keep` BED is the complement of the high-coverage regions (built by
+ * BEDTOOLS_KEEP_REGIONS). `samtools view -L keep --fetch-pairs` keeps reads overlapping the
+ * kept regions and pulls in their mates, so pairs stay intact (no orphans). Reads in pairs
+ * that fall entirely inside a high-coverage region are dropped; a pair straddling a boundary
+ * is kept whole. The stream preserves the input coordinate order (no re-sort) and the input
+ * format (BAM or CRAM); the output is re-indexed.
  */
 process SAMTOOLS_REMOVE_HIGH_COVERAGE {
     tag "$meta.id"
@@ -15,7 +18,7 @@ process SAMTOOLS_REMOVE_HIGH_COVERAGE {
         'biocontainers/samtools:1.21--h50ea8bc_0' }"
 
     input:
-    tuple val(meta), path(input), path(input_index), path(bed)
+    tuple val(meta), path(input), path(input_index), path(keep_bed)
     tuple val(meta2), path(fasta)
     tuple val(meta3), path(fai)
 
@@ -35,19 +38,17 @@ process SAMTOOLS_REMOVE_HIGH_COVERAGE {
     file_type     = input.getExtension()
     if ("${input}" == "${prefix}.${file_type}") error "Input and output names are the same, use \"task.ext.prefix\" to disambiguate!"
     """
-    # Keep only reads that do NOT overlap the high-coverage regions.
-    # -L selects reads overlapping the BED; -U sends the rest (the ones we keep) to the output.
-    # The selected reads are discarded to /dev/null (no --write-index here, it would try to
-    # index /dev/null). The kept -U output is indexed in a separate step below.
+    # Keep reads overlapping the kept (non-high-coverage) regions, fetching mates so pairs
+    # stay intact. Single streaming pass; coordinate order is preserved.
     samtools \\
         view \\
         --threads ${task.cpus} \\
         ${reference} \\
         --output-fmt ${file_type} \\
-        -L ${bed} \\
-        -U ${prefix}.${file_type} \\
+        --fetch-pairs \\
+        -L ${keep_bed} \\
         ${args} \\
-        -o /dev/null \\
+        -o ${prefix}.${file_type} \\
         ${input}
 
     samtools index -@ ${task.cpus} ${prefix}.${file_type}

@@ -22,7 +22,7 @@ process MOSDEPTH_HIGH_COVERAGE {
     def threshold = task.ext.threshold ?: 50000
     // mosdepth regions BED (--by 500): col4 is the mean coverage of each 500bp window
     """
-    zcat ${regions_bed} | awk -vFS="\\t" -vOFS="\\t" '\$4 > ${threshold}' > ${prefix}.high_coverage.bed
+    zcat ${regions_bed} | awk -vFS="\\t" -vOFS="\\t" '\$1 != "chrM" && \$1 != "MT" && \$4 > ${threshold}' > ${prefix}.high_coverage.bed
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
